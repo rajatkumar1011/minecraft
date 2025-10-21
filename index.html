@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Portal</title>
+    <!-- Google Fonts: Poppins for a sleek, modern UI text -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        /* --- CSS Custom Properties (Theme Variables) --- */
+        :root {
+            --glow-color: hsl(186, 100%, 50%); /* Default Cyan/Aqua glow */
+            --background-start: #0f0f1a; /* Darker, deep space blue */
+            --background-end: #000000;   /* Pure black */
+            --surface-color: rgba(30, 30, 40, 0.7); /* More opaque, darker glass */
+            --border-color: #3a3a4c; /* Darker, subtle border */
+            --text-color: #E0E0E0;       /* Lighter gray for better contrast */
+            --text-color-muted: #888899; /* Muted gray for secondary text */
+            --accent-color: hsl(186, 80%, 60%); /* Derived from glow */
+            --shadow-color: rgba(0, 0, 0, 0.7); /* Stronger shadows */
+            --modal-backdrop: rgba(10, 10, 15, 0.7); /* Darker modal backdrop */
+            --font-main: 'Poppins', sans-serif;
+            --transition-speed: 0.3s;
+        }
+
+        /* --- Base & Reset Styles --- */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background: radial-gradient(ellipse at center, var(--background-start) 0%, var(--background-end) 100%);
+            font-family: var(--font-main);
+            color: var(--text-color);
+            cursor: default;
+        }
+
+        /* --- Particle Background --- */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity var(--transition-speed) ease-in-out;
+        }
+        #particle-canvas.active {
+            opacity: 1;
+        }
+        
+        /* Crosshair */
+        #crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            border: 2px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+            display: none; /* Hidden by default */
+        }
+
+
+        /* --- Main App Layout --- */
+        .app-container {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            grid-template-rows: auto 1fr;
+            grid-template-areas:
+                "sidebar header"
+                "sidebar game";
+            height: 100vh;
+            padding: 2.5rem;
+            gap: 2.5rem;
+        }
+
+        /* --- Header (Minecraft Logo) --- */
+        .header {
+            grid-area: header;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-top: 1rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .minecraft-logo {
+            height: 60px;
+            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3)); /* Subtle initial glow */
+            transition: filter 0.3s ease;
+        }
+        
+        /* --- Sidebar Navigation --- */
+        .side-panel {
+            grid-area: sidebar;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            padding: 1.5rem 1rem;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 6px 25px var(--shadow-color);
+            animation: fadeInLeft 0.8s ease-out;
+        }
+
+        .icon-button {
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.85rem;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color var(--transition-speed) ease, transform var(--transition-speed) ease, border-color var(--transition-speed) ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .icon-button svg {
+            width: 26px;
+            height: 26px;
+            stroke: var(--text-color-muted);
+            transition: stroke var(--transition-speed) ease;
+        }
+
+        .icon-button:hover {
+            background-color: var(--accent-color);
+            transform: scale(1.15);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px var(--accent-color);
+        }
+
+        .icon-button:hover svg {
+            stroke: #fff;
+        }
+        
+        /* --- Tooltips for Sidebar --- */
+        .icon-button .tooltip {
+            position: absolute;
+            left: calc(100% + 15px);
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #000;
+            color: #fff;
+            padding: 0.6rem 1.1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .icon-button:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(5px);
+        }
+
+        /* --- Game Wrapper --- */
+        #game-wrapper {
+            grid-area: game;
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 15px 45px var(--shadow-color);
+            animation: popIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            min-height: 0;
+            cursor: pointer;
+        }
+
+        #game-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: 16px;
+            padding: 4px;
+            background: conic-gradient(from var(--angle), var(--glow-color), #0ff0, #0ff8, var(--glow-color));
+            animation: spin 4s linear infinite;
+            --angle: 0deg;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        #minecraft-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        /* --- Modal Styles --- */
+        .modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--modal-backdrop);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity var(--transition-speed) ease, visibility var(--transition-speed) ease;
+        }
+        
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            padding: 3rem;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 550px;
+            box-shadow: 0 15px 50px var(--shadow-color);
+            position: relative;
+            transform: scale(0.9);
+            transition: transform var(--transition-speed) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 2rem;
+            margin: 0;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .close-button {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.6rem;
+            border-radius: 50%;
+            transition: background-color var(--transition-speed) ease;
+        }
+
+        .close-button svg {
+            width: 26px;
+            height: 26px;
+            stroke: var(--text-color-muted);
+            transition: stroke var(--transition-speed) ease, transform var(--transition-speed) ease;
+        }
+
+        .close-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .close-button:hover svg {
+            stroke: var(--text-color);
+            transform: rotate(90deg);
+        }
+
+        .settings-group {
+            margin-bottom: 2rem;
+        }
+
+        .settings-group label {
+            display: block;
+            margin-bottom: 0.85rem;
+            font-weight: 400;
+            color: var(--text-color-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Color Palette Picker */
+        .color-palette {
+            display: flex;
+            gap: 1.2rem;
+            justify-content: center;
+        }
+        
+        .color-swatch {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: transform var(--transition-speed) ease, border-color var(--transition-speed) ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .color-swatch.active {
+            border-color: #ffffff;
+            transform: scale(1.15);
+        }
+
+        /* Custom Toggle Switch */
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 0.8rem 1.2rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 55px;
+            height: 30px;
+        }
+
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #2d3748;
+            transition: var(--transition-speed);
+            border-radius: 30px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: var(--transition-speed);
+            border-radius: 50%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        input:checked + .slider {
+            background-color: var(--accent-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(25px);
+        }
+        
+        /* Info Modal Specifics */
+        .controls-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .controls-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+        }
+        .controls-list li:last-child {
+            border-bottom: none;
+        }
+        .controls-list .key {
+            font-weight: 500;
+            background-color: #374151;
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            color: #fff;
+        }
+
+        /* --- Loader --- */
+        #loader {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--background-end);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid var(--border-color);
+            border-top: 5px solid var(--glow-color);
+            border-radius: 50%;
+            animation: loader-spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+            margin-bottom: 1.5rem;
+        }
+
+        #loader p {
+            font-size: 1.1rem;
+            color: var(--text-color-muted);
+            animation: pulse 1.5s infinite alternate;
+        }
+        
+        #loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* --- Keyframe Animations --- */
+        @keyframes spin { to { --angle: 360deg; } }
+        @keyframes loader-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes pulse { from { transform: scale(0.98); opacity: 0.8; } to { transform: scale(1.02); opacity: 1; } }
+
+        @property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+    </style>
+</head>
+<body>
+    
+    <div id="crosshair"></div>
+    <audio id="ambient-music" loop>
+        <source src="https://assets.mixkit.co/music/preview/mixkit-just-a-little-trip-983.mp3" type="audio/mpeg">
+    </audio>
+    <canvas id="particle-canvas"></canvas>
+    <div id="loader">
+        <div class="spinner"></div>
+        <p>Building World...</p>
+    </div>
+
+    <div class="app-container">
+        <header class="header">
+            <img src="minecraft_logo.png" alt="Minecraft Logo" class="minecraft-logo" onerror="this.onerror=null;this.src='https://placehold.co/300x48/000000/FFFFFF?text=Minecraft&font=pixel'">
+        </header>
+
+        <nav class="side-panel">
+            <button class="icon-button" id="settings-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <span class="tooltip">Settings</span>
+            </button>
+            <button class="icon-button" id="info-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <span class="tooltip">Info & Controls</span>
+            </button>
+            <button class="icon-button" id="fullscreen-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                <span class="tooltip">Toggle Fullscreen</span>
+            </button>
+        </nav>
+
+        <div id="game-wrapper">
+            <canvas id="minecraft-canvas"></canvas>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-button" data-close-modal="settings-modal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <div class="modal-header"><h2>Portal Settings</h2></div>
+            <div class="modal-body">
+                <div class="settings-group">
+                    <label>Accent Color</label>
+                    <div class="color-palette" id="color-palette">
+                        <div class="color-swatch active" style="background-color: hsl(186, 100%, 50%);" data-color="hsl(186, 100%, 50%)"></div>
+                        <div class="color-swatch" style="background-color: hsl(260, 100%, 65%);" data-color="hsl(260, 100%, 65%)"></div>
+                        <div class="color-swatch" style="background-color: hsl(340, 100%, 60%);" data-color="hsl(340, 100%, 60%)"></div>
+                        <div class="color-swatch" style="background-color: hsl(120, 100%, 45%);" data-color="hsl(120, 100%, 45%)"></div>
+                        <div class="color-swatch" style="background-color: hsl(45, 100%, 55%);" data-color="hsl(45, 100%, 55%)"></div>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <div class="toggle-switch">
+                        <label for="particles-toggle">Animated Background</label>
+                        <label class="switch"><input type="checkbox" id="particles-toggle" checked><span class="slider"></span></label>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <div class="toggle-switch">
+                        <label for="sound-toggle">Ambient Sound</label>
+                        <label class="switch"><input type="checkbox" id="sound-toggle"><span class="slider"></span></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="info-modal" class="modal active">
+        <div class="modal-content">
+            <button class="close-button" data-close-modal="info-modal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <div class="modal-header"><h2>Welcome to Block World</h2></div>
+            <div class="modal-body">
+                <p style="text-align: center; color: var(--text-color-muted); margin-top: -1rem; margin-bottom: 2rem;">Click the game window to lock controls and start playing.</p>
+                <ul class="controls-list">
+                    <li><span>Look</span> <span class="key">Mouse</span></li>
+                    <li><span>Move</span> <span class="key">W, A, S, D</span></li>
+                    <li><span>Jump</span> <span class="key">Space</span></li>
+                    <li><span>Destroy Block</span> <span class="key">Left Click</span></li>
+                    <li><span>Place Block</span> <span class="key">Right Click</span></li>
+                    <li><span>Release Mouse</span> <span class="key">ESC</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // --- UI/UX Script ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const root = document.documentElement;
+        
+        // Modal Handling
+        const settingsBtn = document.getElementById('settings-btn');
+        const infoBtn = document.getElementById('info-btn');
+        const settingsModal = document.getElementById('settings-modal');
+        const infoModal = document.getElementById('info-modal');
+        const closeButtons = document.querySelectorAll('.close-button');
+
+        const openModal = (modal) => modal.classList.add('active');
+        const closeModal = (modal) => modal.classList.remove('active');
+
+        settingsBtn.addEventListener('click', () => openModal(settingsModal));
+        infoBtn.addEventListener('click', () => openModal(infoModal));
+
+        closeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const modalId = button.getAttribute('data-close-modal');
+                if(modalId) closeModal(document.getElementById(modalId));
+            });
+        });
+        
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) closeModal(modal);
+            });
+        });
+
+        // Settings Logic
+        const colorPalette = document.getElementById('color-palette');
+        const particlesToggle = document.getElementById('particles-toggle');
+        const soundToggle = document.getElementById('sound-toggle');
+        const ambientMusic = document.getElementById('ambient-music');
+        const minecraftLogo = document.querySelector('.minecraft-logo');
+
+        colorPalette.addEventListener('click', (e) => {
+            if (e.target.classList.contains('color-swatch')) {
+                const color = e.target.dataset.color;
+                root.style.setProperty('--glow-color', color);
+                
+                let accentColor = color; // Simple mapping for this case
+                root.style.setProperty('--accent-color', accentColor);
+                
+                minecraftLogo.style.filter = `drop-shadow(0 0 15px ${color})`;
+                
+                colorPalette.querySelector('.active').classList.remove('active');
+                e.target.classList.add('active');
+            }
+        });
+
+        soundToggle.addEventListener('change', () => {
+            if (soundToggle.checked) {
+                ambientMusic.volume = 0.2;
+                ambientMusic.play().catch(e => console.log("Audio needs user interaction."));
+            } else {
+                ambientMusic.pause();
+            }
+        });
+        
+        document.body.addEventListener('click', () => {
+            if (soundToggle.checked && ambientMusic.paused) ambientMusic.play().catch(e => {});
+        }, { once: true });
+
+        // Fullscreen API
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const gameWrapper = document.getElementById('game-wrapper');
+
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                gameWrapper.requestFullscreen().catch(err => alert(`Fullscreen error: ${err.message}`));
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        // Animated Particle Background
+        const particleCanvas = document.getElementById('particle-canvas');
+        const particleCtx = particleCanvas.getContext('2d');
+        let particles = [];
+        let animationFrameId;
+
+        function resizeParticleCanvas() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeParticleCanvas);
+
+        class Particle {
+            constructor() { this.reset(); }
+            update() {
+                this.x += this.speedX; this.y += this.speedY;
+                this.life--; if (this.life <= 0) this.reset();
+            }
+            draw() {
+                particleCtx.fillStyle = this.color;
+                particleCtx.beginPath();
+                particleCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                particleCtx.fill();
+            }
+            reset() {
+                this.x = Math.random() * particleCanvas.width; this.y = Math.random() * particleCanvas.height;
+                this.size = Math.random() * 2 + 1; this.speedX = Math.random() * 1 - 0.5;
+                this.speedY = Math.random() * 1 - 0.5; this.color = `hsla(200, 50%, 85%, ${Math.random() * 0.5})`;
+                this.life = Math.random() * 200 + 100;
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            let num = (particleCanvas.width * particleCanvas.height) / 9000;
+            for (let i = 0; i < num; i++) particles.push(new Particle());
+        }
+        
+        function animateParticles() {
+            particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            animationFrameId = requestAnimationFrame(animateParticles);
+        }
+
+        function startParticles() {
+            resizeParticleCanvas(); initParticles();
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animateParticles(); particleCanvas.classList.add('active');
+        }
+
+        function stopParticles() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            particleCanvas.classList.remove('active');
+            particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+        }
+        
+        if (particlesToggle.checked) startParticles();
+        
+        particlesToggle.addEventListener('change', () => {
+            particlesToggle.checked ? startParticles() : stopParticles();
+        });
+    });
+
+    // --- Three.js Minecraft Game Script ---
+    const gameScript = () => {
+        const gameCanvas = document.getElementById('minecraft-canvas');
+        const loader = document.getElementById('loader');
+        const crosshair = document.getElementById('crosshair');
+
+        let scene, camera, renderer, controls;
+        let cubes = [];
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let velocity = new THREE.Vector3();
+        let onObject = false;
+        let canJump = false;
+        
+        const moveState = {
+            forward: false, backward: false, left: false, right: false,
+            up: false, down: false
+        };
+
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB); // Sky blue
+            scene.fog = new THREE.Fog(0x87CEEB, 0, 30);
+
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, gameCanvas.clientWidth / gameCanvas.clientHeight, 0.1, 1000);
+            camera.position.set(8, 10, 24);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: gameCanvas, antialias: true });
+            renderer.setSize(gameCanvas.clientWidth, gameCanvas.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(50, 50, 50);
+            scene.add(directionalLight);
+
+            // Ground plane
+            const planeGeometry = new THREE.PlaneGeometry(100, 100);
+            const planeMaterial = new THREE.MeshLambertMaterial({ color: 0x55aa55 }); // Grassy color
+            const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+            plane.rotation.x = -Math.PI / 2;
+            plane.position.y = -0.5;
+            scene.add(plane);
+
+            // Initial cubes (world)
+            const worldSize = 16;
+            const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+            for (let x = -worldSize / 2; x < worldSize / 2; x++) {
+                for (let z = -worldSize / 2; z < worldSize / 2; z++) {
+                    const y = Math.round(Math.sin(x/4) * 2 + Math.cos(z/4) * 2);
+                    const cubeMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 }); // Brown
+                    const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+                    cube.position.set(x, y, z);
+                    scene.add(cube);
+                    cubes.push(cube);
+                }
+            }
+
+            // Controls Setup
+            setupControls();
+            
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize, false);
+            
+            // Hide loader and start game
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                document.getElementById('info-modal').classList.add('active');
+            }, 500);
+
+            animate();
+        }
+
+        function setupControls() {
+            camera.rotation.order = 'YXZ'; // To avoid gimbal lock issues
+            
+            const onMouseMove = (event) => {
+                if (document.pointerLockElement === gameCanvas) {
+                    camera.rotation.y -= event.movementX * 0.002;
+                    camera.rotation.x -= event.movementY * 0.002;
+                    camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+                }
+            };
+            
+            const onPointerLockChange = () => {
+                crosshair.style.display = document.pointerLockElement === gameCanvas ? 'block' : 'none';
+            };
+            
+            const onPointerLockError = () => {
+                console.error('Pointer Lock failed.');
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('pointerlockchange', onPointerLockChange);
+            document.addEventListener('pointerlockerror', onPointerLockError);
+
+            gameCanvas.addEventListener('click', () => {
+                gameCanvas.requestPointerLock();
+            });
+            
+            const onKeyDown = (event) => {
+                switch (event.code) {
+                    case 'KeyW': moveState.forward = true; break;
+                    case 'KeyS': moveState.backward = true; break;
+                    case 'KeyA': moveState.left = true; break;
+                    case 'KeyD': moveState.right = true; break;
+                    case 'Space': if (canJump) velocity.y += 8; canJump = false; break;
+                }
+            };
+
+            const onKeyUp = (event) => {
+                switch (event.code) {
+                    case 'KeyW': moveState.forward = false; break;
+                    case 'KeyS': moveState.backward = false; break;
+                    case 'KeyA': moveState.left = false; break;
+                    case 'KeyD': moveState.right = false; break;
+                }
+            };
+
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            
+            // Block placement/destruction
+            gameCanvas.addEventListener('mousedown', (event) => {
+                if (document.pointerLockElement !== gameCanvas) return;
+                
+                raycaster.setFromCamera({x:0, y:0}, camera);
+                const intersects = raycaster.intersectObjects(cubes);
+
+                if (intersects.length > 0) {
+                    const intersect = intersects[0];
+                    if (event.button === 2) { // Right-click to add
+                        const newCube = new THREE.Mesh(
+                            new THREE.BoxGeometry(1, 1, 1),
+                            new THREE.MeshLambertMaterial({ color: 0x999999 }) // Stone
+                        );
+                        newCube.position.copy(intersect.object.position).add(intersect.face.normal);
+                        scene.add(newCube);
+                        cubes.push(newCube);
+                    } else if (event.button === 0) { // Left-click to remove
+                        if (intersect.object !== plane) {
+                            scene.remove(intersect.object);
+                            cubes.splice(cubes.indexOf(intersect.object), 1);
+                        }
+                    }
+                }
+            });
+        }
+        
+        function onWindowResize() {
+            if (gameCanvas.clientWidth > 0 && gameCanvas.clientHeight > 0) {
+                camera.aspect = gameCanvas.clientWidth / gameCanvas.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(gameCanvas.clientWidth, gameCanvas.clientHeight);
+            }
+        }
+        
+        let lastTime = performance.now();
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = performance.now();
+            const delta = (time - lastTime) / 1000;
+            
+            // Simple gravity and movement
+            velocity.y -= 9.8 * delta; // gravity
+            camera.position.y += velocity.y * delta;
+            
+            // Collision with ground
+            if (camera.position.y < 1.5) {
+                velocity.y = 0;
+                camera.position.y = 1.5;
+                canJump = true;
+            }
+
+            // Movement Speed
+            const speed = 5.0 * delta;
+            if (moveState.forward) camera.translateZ(-speed);
+            if (moveState.backward) camera.translateZ(speed);
+            if (moveState.left) camera.translateX(-speed);
+            if (moveState.right) camera.translateX(speed);
+            
+            renderer.render(scene, camera);
+            lastTime = time;
+        }
+
+        init();
+    };
+    
+    // Run game script after DOM is ready
+    gameScript();
+    </script>
+</body>
+</html>
+
