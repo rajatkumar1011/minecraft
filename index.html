@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minecraft Portal</title>
+    <title>Minecraft Classic</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%238B4513'/%3E%3Crect width='32' height='12' fill='%23228B22'/%3E%3Crect x='2' y='2' width='5' height='5' fill='%2332CD32'/%3E%3Crect x='12' y='4' width='5' height='5' fill='%2332CD32'/%3E%3Crect x='22' y='1' width='5' height='5' fill='%2332CD32'/%3E%3Crect x='28' y='6' width='4' height='4' fill='%2332CD32'/%3E%3C/svg%3E">
     <!-- Google Fonts: Poppins for a sleek, modern UI text -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,8 +68,8 @@
                 "sidebar header"
                 "sidebar game";
             height: 100vh;
-            padding: 2.5rem;
-            gap: 2.5rem;
+            padding: 2vh 1.5vw; /* Use viewport units for adaptive spacing */
+            gap: 1.5vh; /* Use viewport units for adaptive spacing */
         }
 
         /* --- Header (Minecraft Logo) --- */
@@ -77,12 +78,12 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding-top: 1rem;
+            padding-bottom: 1vh; /* Use viewport units */
             animation: fadeInDown 0.8s ease-out;
         }
 
         .minecraft-logo {
-            height: 60px;
+            height: clamp(30px, 4vh, 45px); /* Fluid logo size with min/max */
             filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3)); /* Subtle initial glow */
             transition: filter 0.3s ease;
         }
@@ -94,11 +95,11 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 2rem;
-            padding: 1.5rem 1rem;
+            gap: 2vh; /* Use viewport units */
+            padding: 1.5vh 1vw; /* Use viewport units */
             background: var(--surface-color);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
+            border-radius: 12px;
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             box-shadow: 0 6px 25px var(--shadow-color);
@@ -109,7 +110,7 @@
             position: relative;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 0.85rem;
+            padding: clamp(0.6rem, 1.2vh, 0.8rem); /* Fluid padding */
             border-radius: 50%;
             cursor: pointer;
             transition: background-color var(--transition-speed) ease, transform var(--transition-speed) ease, border-color var(--transition-speed) ease;
@@ -120,8 +121,8 @@
         }
 
         .icon-button svg {
-            width: 26px;
-            height: 26px;
+            width: clamp(20px, 2.5vh, 24px); /* Fluid icon size */
+            height: clamp(20px, 2.5vh, 24px); /* Fluid icon size */
             stroke: var(--text-color-muted);
             transition: stroke var(--transition-speed) ease;
         }
@@ -140,14 +141,14 @@
         /* --- Tooltips for Sidebar --- */
         .icon-button .tooltip {
             position: absolute;
-            left: calc(100% + 15px);
-            top: 50%;
-            transform: translateY(-50%);
+            left: 50%;
+            bottom: calc(100% + 10px); /* Position above the button */
+            transform: translateX(-50%); /* Center horizontally */
             background-color: #000;
             color: #fff;
-            padding: 0.6rem 1.1rem;
+            padding: 0.5rem 0.9rem; /* Adjusted padding */
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 0.85rem; /* Smaller font */
             white-space: nowrap;
             opacity: 0;
             visibility: hidden;
@@ -160,7 +161,7 @@
         .icon-button:hover .tooltip {
             opacity: 1;
             visibility: visible;
-            transform: translateY(-50%) translateX(5px);
+            transform: translateX(-50%) translateY(-5px); /* Animate upwards on hover */
         }
 
         /* --- Game Wrapper --- */
@@ -286,6 +287,7 @@
             font-weight: 400;
             color: var(--text-color-muted);
             font-size: 0.95rem;
+            text-align: center; /* Center the label for the color swatches */
         }
 
         /* Color Palette Picker */
@@ -310,60 +312,6 @@
             transform: scale(1.15);
         }
 
-        /* Custom Toggle Switch */
-        .toggle-switch {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background-color: rgba(0, 0, 0, 0.2);
-            padding: 0.8rem 1.2rem;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 55px;
-            height: 30px;
-        }
-
-        .switch input { 
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #2d3748;
-            transition: var(--transition-speed);
-            border-radius: 30px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 24px;
-            width: 24px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: var(--transition-speed);
-            border-radius: 50%;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-        }
-
-        input:checked + .slider {
-            background-color: var(--accent-color);
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(25px);
-        }
-        
         /* Info Modal Specifics */
         .controls-list {
             list-style: none;
@@ -439,10 +387,6 @@
 </head>
 <body>
     
-    <audio id="ambient-music" loop>
-        <source src="https://assets.mixkit.co/music/preview/mixkit-just-a-little-trip-983.mp3" type="audio/mpeg">
-    </audio>
-    <canvas id="particle-canvas"></canvas>
     <div id="loader">
         <div class="spinner"></div>
         <p>Loading Minecraft Classic...</p>
@@ -455,8 +399,8 @@
 
         <nav class="side-panel">
             <button class="icon-button" id="settings-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                <span class="tooltip">Settings</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"><path d="M12 2.69l.346.666L19.5 15.3l-1.414 1.414L12 10.414l-6.086 6.3L4.5 15.3l7.154-11.944L12 2.69zm0 18.62l-7.154-11.944L4.5 8.7l6.086 6.3L12 18.586l1.414-1.586 6.086-6.3.346-.666L12 21.31zM12 2.69L4.5 15.3h15L12 2.69z"/></svg>
+                <span class="tooltip">Color Palette</span>
             </button>
             <button class="icon-button" id="info-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -483,7 +427,7 @@
             <button class="close-button" data-close-modal="settings-modal">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
-            <div class="modal-header"><h2>Portal Settings</h2></div>
+            <div class="modal-header"><h2>Color Palette</h2></div>
             <div class="modal-body">
                 <div class="settings-group">
                     <label>Accent Color</label>
@@ -495,23 +439,11 @@
                         <div class="color-swatch" style="background-color: hsl(45, 100%, 55%);" data-color="hsl(45, 100%, 55%)"></div>
                     </div>
                 </div>
-                <div class="settings-group">
-                    <div class="toggle-switch">
-                        <label for="particles-toggle">Animated Background</label>
-                        <label class="switch"><input type="checkbox" id="particles-toggle" checked><span class="slider"></span></label>
-                    </div>
-                </div>
-                <div class="settings-group">
-                    <div class="toggle-switch">
-                        <label for="sound-toggle">Ambient Sound</label>
-                        <label class="switch"><input type="checkbox" id="sound-toggle"><span class="slider"></span></label>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
     
-    <div id="info-modal" class="modal active">
+    <div id="info-modal" class="modal">
         <div class="modal-content">
             <button class="close-button" data-close-modal="info-modal">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -587,9 +519,6 @@
 
         // Settings Logic
         const colorPalette = document.getElementById('color-palette');
-        const particlesToggle = document.getElementById('particles-toggle');
-        const soundToggle = document.getElementById('sound-toggle');
-        const ambientMusic = document.getElementById('ambient-music');
         const minecraftLogo = document.querySelector('.minecraft-logo');
 
         colorPalette.addEventListener('click', (e) => {
@@ -607,19 +536,6 @@
             }
         });
 
-        soundToggle.addEventListener('change', () => {
-            if (soundToggle.checked) {
-                ambientMusic.volume = 0.2;
-                ambientMusic.play().catch(e => console.log("Audio needs user interaction."));
-            } else {
-                ambientMusic.pause();
-            }
-        });
-        
-        document.body.addEventListener('click', () => {
-            if (soundToggle.checked && ambientMusic.paused) ambientMusic.play().catch(e => {});
-        }, { once: true });
-
         // Fullscreen API
         const fullscreenBtn = document.getElementById('fullscreen-btn');
         const gameWrapper = document.getElementById('game-wrapper');
@@ -630,68 +546,6 @@
             } else {
                 document.exitFullscreen();
             }
-        });
-
-        // Animated Particle Background
-        const particleCanvas = document.getElementById('particle-canvas');
-        const particleCtx = particleCanvas.getContext('2d');
-        let particles = [];
-        let animationFrameId;
-
-        function resizeParticleCanvas() {
-            particleCanvas.width = window.innerWidth;
-            particleCanvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeParticleCanvas);
-
-        class Particle {
-            constructor() { this.reset(); }
-            update() {
-                this.x += this.speedX; this.y += this.speedY;
-                this.life--; if (this.life <= 0) this.reset();
-            }
-            draw() {
-                particleCtx.fillStyle = this.color;
-                particleCtx.beginPath();
-                particleCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                particleCtx.fill();
-            }
-            reset() {
-                this.x = Math.random() * particleCanvas.width; this.y = Math.random() * particleCanvas.height;
-                this.size = Math.random() * 2 + 1; this.speedX = Math.random() * 1 - 0.5;
-                this.speedY = Math.random() * 1 - 0.5; this.color = `hsla(200, 50%, 85%, ${Math.random() * 0.5})`;
-                this.life = Math.random() * 200 + 100;
-            }
-        }
-
-        function initParticles() {
-            particles = [];
-            let num = (particleCanvas.width * particleCanvas.height) / 9000;
-            for (let i = 0; i < num; i++) particles.push(new Particle());
-        }
-        
-        function animateParticles() {
-            particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
-            particles.forEach(p => { p.update(); p.draw(); });
-            animationFrameId = requestAnimationFrame(animateParticles);
-        }
-
-        function startParticles() {
-            resizeParticleCanvas(); initParticles();
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            animateParticles(); particleCanvas.classList.add('active');
-        }
-
-        function stopParticles() {
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            particleCanvas.classList.remove('active');
-            particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
-        }
-        
-        if (particlesToggle.checked) startParticles();
-        
-        particlesToggle.addEventListener('change', () => {
-            particlesToggle.checked ? startParticles() : stopParticles();
         });
     });
 
