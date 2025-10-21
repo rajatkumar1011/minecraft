@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <style>
         /* --- CSS Custom Properties (Theme Variables) --- */
@@ -58,22 +57,6 @@
         #particle-canvas.active {
             opacity: 1;
         }
-        
-        /* Crosshair */
-        #crosshair {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            width: 10px;
-            height: 10px;
-            border: 2px solid white;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 10;
-            display: none; /* Hidden by default */
-        }
-
 
         /* --- Main App Layout --- */
         .app-container {
@@ -189,7 +172,6 @@
             box-shadow: 0 15px 45px var(--shadow-color);
             animation: popIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             min-height: 0;
-            cursor: pointer;
         }
 
         #game-wrapper::before {
@@ -209,9 +191,10 @@
             pointer-events: none;
         }
         
-        #minecraft-canvas {
+        #minecraft-container {
             width: 100%;
             height: 100%;
+            border: none;
             display: block;
         }
         
@@ -456,14 +439,13 @@
 </head>
 <body>
     
-    <div id="crosshair"></div>
     <audio id="ambient-music" loop>
         <source src="https://assets.mixkit.co/music/preview/mixkit-just-a-little-trip-983.mp3" type="audio/mpeg">
     </audio>
     <canvas id="particle-canvas"></canvas>
     <div id="loader">
         <div class="spinner"></div>
-        <p>Building World...</p>
+        <p>Loading Minecraft Classic...</p>
     </div>
 
     <div class="app-container">
@@ -487,7 +469,12 @@
         </nav>
 
         <div id="game-wrapper">
-            <canvas id="minecraft-canvas"></canvas>
+            <iframe 
+                id="minecraft-container"
+                src="https://classic.minecraft.net/"
+                title="Minecraft Classic Game"
+                allow="fullscreen; clipboard-write; pointer-lock"
+            ></iframe>
         </div>
     </div>
 
@@ -529,16 +516,18 @@
             <button class="close-button" data-close-modal="info-modal">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </button>
-            <div class="modal-header"><h2>Welcome to Block World</h2></div>
+            <div class="modal-header"><h2>Welcome to Minecraft Classic</h2></div>
             <div class="modal-body">
-                <p style="text-align: center; color: var(--text-color-muted); margin-top: -1rem; margin-bottom: 2rem;">Click the game window to lock controls and start playing.</p>
+                <p style="text-align: center; color: var(--text-color-muted); margin-top: -1rem; margin-bottom: 2rem;">Click inside the game window to start playing.</p>
                 <ul class="controls-list">
-                    <li><span>Look</span> <span class="key">Mouse</span></li>
-                    <li><span>Move</span> <span class="key">W, A, S, D</span></li>
+                    <li><span>Movement</span> <span class="key">W, A, S, D</span></li>
                     <li><span>Jump</span> <span class="key">Space</span></li>
                     <li><span>Destroy Block</span> <span class="key">Left Click</span></li>
                     <li><span>Place Block</span> <span class="key">Right Click</span></li>
-                    <li><span>Release Mouse</span> <span class="key">ESC</span></li>
+                    <li><span>Toggle Block Type</span> <span class="key">Middle Click</span></li>
+                    <li><span>Select Block</span> <span class="key">Number Keys</span></li>
+                    <li><span>Open Block Menu</span> <span class="key">B</span></li>
+                    <li><span>Toggle Fog</span> <span class="key">F</span></li>
                 </ul>
             </div>
         </div>
@@ -574,6 +563,27 @@
                 if (event.target === modal) closeModal(modal);
             });
         });
+
+        // Loader
+        const loader = document.getElementById('loader');
+        const gameIframe = document.getElementById('minecraft-container');
+        
+        let isGameLoaded = false;
+        
+        gameIframe.addEventListener('load', () => {
+            isGameLoaded = true;
+            setTimeout(() => {
+                 loader.classList.add('hidden');
+            }, 500);
+        });
+        
+        // Fallback to hide loader
+        setTimeout(() => {
+            if (!isGameLoaded) {
+                 loader.classList.add('hidden');
+            }
+        }, 8000); // Longer fallback for potentially slow game load
+
 
         // Settings Logic
         const colorPalette = document.getElementById('color-palette');
@@ -685,203 +695,6 @@
         });
     });
 
-    // --- Three.js Minecraft Game Script ---
-    const gameScript = () => {
-        const gameCanvas = document.getElementById('minecraft-canvas');
-        const loader = document.getElementById('loader');
-        const crosshair = document.getElementById('crosshair');
-
-        let scene, camera, renderer, controls;
-        let cubes = [];
-        let raycaster = new THREE.Raycaster();
-        let mouse = new THREE.Vector2();
-        let velocity = new THREE.Vector3();
-        let onObject = false;
-        let canJump = false;
-        
-        const moveState = {
-            forward: false, backward: false, left: false, right: false,
-            up: false, down: false
-        };
-
-        function init() {
-            // Scene
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB); // Sky blue
-            scene.fog = new THREE.Fog(0x87CEEB, 0, 30);
-
-
-            // Camera
-            camera = new THREE.PerspectiveCamera(75, gameCanvas.clientWidth / gameCanvas.clientHeight, 0.1, 1000);
-            camera.position.set(8, 10, 24);
-
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ canvas: gameCanvas, antialias: true });
-            renderer.setSize(gameCanvas.clientWidth, gameCanvas.clientHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-
-            // Lights
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(50, 50, 50);
-            scene.add(directionalLight);
-
-            // Ground plane
-            const planeGeometry = new THREE.PlaneGeometry(100, 100);
-            const planeMaterial = new THREE.MeshLambertMaterial({ color: 0x55aa55 }); // Grassy color
-            const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-            plane.rotation.x = -Math.PI / 2;
-            plane.position.y = -0.5;
-            scene.add(plane);
-
-            // Initial cubes (world)
-            const worldSize = 16;
-            const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
-            for (let x = -worldSize / 2; x < worldSize / 2; x++) {
-                for (let z = -worldSize / 2; z < worldSize / 2; z++) {
-                    const y = Math.round(Math.sin(x/4) * 2 + Math.cos(z/4) * 2);
-                    const cubeMaterial = new THREE.MeshLambertMaterial({ color: 0x8B4513 }); // Brown
-                    const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-                    cube.position.set(x, y, z);
-                    scene.add(cube);
-                    cubes.push(cube);
-                }
-            }
-
-            // Controls Setup
-            setupControls();
-            
-            // Event Listeners
-            window.addEventListener('resize', onWindowResize, false);
-            
-            // Hide loader and start game
-            setTimeout(() => {
-                loader.classList.add('hidden');
-                document.getElementById('info-modal').classList.add('active');
-            }, 500);
-
-            animate();
-        }
-
-        function setupControls() {
-            camera.rotation.order = 'YXZ'; // To avoid gimbal lock issues
-            
-            const onMouseMove = (event) => {
-                if (document.pointerLockElement === gameCanvas) {
-                    camera.rotation.y -= event.movementX * 0.002;
-                    camera.rotation.x -= event.movementY * 0.002;
-                    camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
-                }
-            };
-            
-            const onPointerLockChange = () => {
-                crosshair.style.display = document.pointerLockElement === gameCanvas ? 'block' : 'none';
-            };
-            
-            const onPointerLockError = () => {
-                console.error('Pointer Lock failed.');
-            };
-
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('pointerlockchange', onPointerLockChange);
-            document.addEventListener('pointerlockerror', onPointerLockError);
-
-            gameCanvas.addEventListener('click', () => {
-                gameCanvas.requestPointerLock();
-            });
-            
-            const onKeyDown = (event) => {
-                switch (event.code) {
-                    case 'KeyW': moveState.forward = true; break;
-                    case 'KeyS': moveState.backward = true; break;
-                    case 'KeyA': moveState.left = true; break;
-                    case 'KeyD': moveState.right = true; break;
-                    case 'Space': if (canJump) velocity.y += 8; canJump = false; break;
-                }
-            };
-
-            const onKeyUp = (event) => {
-                switch (event.code) {
-                    case 'KeyW': moveState.forward = false; break;
-                    case 'KeyS': moveState.backward = false; break;
-                    case 'KeyA': moveState.left = false; break;
-                    case 'KeyD': moveState.right = false; break;
-                }
-            };
-
-            document.addEventListener('keydown', onKeyDown);
-            document.addEventListener('keyup', onKeyUp);
-            
-            // Block placement/destruction
-            gameCanvas.addEventListener('mousedown', (event) => {
-                if (document.pointerLockElement !== gameCanvas) return;
-                
-                raycaster.setFromCamera({x:0, y:0}, camera);
-                const intersects = raycaster.intersectObjects(cubes);
-
-                if (intersects.length > 0) {
-                    const intersect = intersects[0];
-                    if (event.button === 2) { // Right-click to add
-                        const newCube = new THREE.Mesh(
-                            new THREE.BoxGeometry(1, 1, 1),
-                            new THREE.MeshLambertMaterial({ color: 0x999999 }) // Stone
-                        );
-                        newCube.position.copy(intersect.object.position).add(intersect.face.normal);
-                        scene.add(newCube);
-                        cubes.push(newCube);
-                    } else if (event.button === 0) { // Left-click to remove
-                        if (intersect.object !== plane) {
-                            scene.remove(intersect.object);
-                            cubes.splice(cubes.indexOf(intersect.object), 1);
-                        }
-                    }
-                }
-            });
-        }
-        
-        function onWindowResize() {
-            if (gameCanvas.clientWidth > 0 && gameCanvas.clientHeight > 0) {
-                camera.aspect = gameCanvas.clientWidth / gameCanvas.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(gameCanvas.clientWidth, gameCanvas.clientHeight);
-            }
-        }
-        
-        let lastTime = performance.now();
-        function animate() {
-            requestAnimationFrame(animate);
-
-            const time = performance.now();
-            const delta = (time - lastTime) / 1000;
-            
-            // Simple gravity and movement
-            velocity.y -= 9.8 * delta; // gravity
-            camera.position.y += velocity.y * delta;
-            
-            // Collision with ground
-            if (camera.position.y < 1.5) {
-                velocity.y = 0;
-                camera.position.y = 1.5;
-                canJump = true;
-            }
-
-            // Movement Speed
-            const speed = 5.0 * delta;
-            if (moveState.forward) camera.translateZ(-speed);
-            if (moveState.backward) camera.translateZ(speed);
-            if (moveState.left) camera.translateX(-speed);
-            if (moveState.right) camera.translateX(speed);
-            
-            renderer.render(scene, camera);
-            lastTime = time;
-        }
-
-        init();
-    };
-    
-    // Run game script after DOM is ready
-    gameScript();
     </script>
 </body>
 </html>
