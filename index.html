@@ -39,53 +39,20 @@
             width: 100vw;
             overflow: hidden;
             background: radial-gradient(ellipse at center, var(--background-start) 0%, var(--background-end) 100%);
-            font-family: var(--font-main);
+            font-family: var(--font-main), sans-serif;
             color: var(--text-color);
             cursor: default;
-        }
-
-        /* --- Particle Background --- */
-        #particle-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0;
-            transition: opacity var(--transition-speed) ease-in-out;
-        }
-        #particle-canvas.active {
-            opacity: 1;
         }
 
         /* --- Main App Layout --- */
         .app-container {
             display: grid;
             grid-template-columns: auto 1fr;
-            grid-template-rows: auto 1fr;
-            grid-template-areas:
-                "sidebar header"
-                "sidebar game";
+            grid-template-rows: 1fr; /* Single row for sidebar and game */
+            grid-template-areas: "sidebar game";
             height: 100vh;
-            padding: 2vh 1.5vw; /* Use viewport units for adaptive spacing */
-            gap: 1.5vh; /* Use viewport units for adaptive spacing */
-        }
-
-        /* --- Header (Minecraft Logo) --- */
-        .header {
-            grid-area: header;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding-bottom: 1vh; /* Use viewport units */
-            animation: fadeInDown 0.8s ease-out;
-        }
-
-        .minecraft-logo {
-            height: clamp(30px, 4vh, 45px); /* Fluid logo size with min/max */
-            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.3)); /* Subtle initial glow */
-            transition: filter 0.3s ease;
+            padding: 2vh 1.5vw;
+            gap: 1.5vw; /* Adjusted gap to be based on width */
         }
         
         /* --- Sidebar Navigation --- */
@@ -95,8 +62,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 2vh; /* Use viewport units */
-            padding: 1.5vh 1vw; /* Use viewport units */
+            gap: 2vh;
+            padding: 1.5vh 1vw;
             background: var(--surface-color);
             border: 1px solid var(--border-color);
             border-radius: 12px;
@@ -104,13 +71,14 @@
             -webkit-backdrop-filter: blur(12px);
             box-shadow: 0 6px 25px var(--shadow-color);
             animation: fadeInLeft 0.8s ease-out;
+            z-index: 10;
         }
 
         .icon-button {
             position: relative;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: clamp(0.6rem, 1.2vh, 0.8rem); /* Fluid padding */
+            padding: clamp(0.6rem, 1.2vh, 0.8rem);
             border-radius: 50%;
             cursor: pointer;
             transition: background-color var(--transition-speed) ease, transform var(--transition-speed) ease, border-color var(--transition-speed) ease;
@@ -121,8 +89,8 @@
         }
 
         .icon-button svg {
-            width: clamp(20px, 2.5vh, 24px); /* Fluid icon size */
-            height: clamp(20px, 2.5vh, 24px); /* Fluid icon size */
+            width: clamp(20px, 2.5vh, 24px);
+            height: clamp(20px, 2.5vh, 24px);
             stroke: var(--text-color-muted);
             transition: stroke var(--transition-speed) ease;
         }
@@ -137,32 +105,6 @@
         .icon-button:hover svg {
             stroke: #fff;
         }
-        
-        /* --- Tooltips for Sidebar --- */
-        .icon-button .tooltip {
-            position: absolute;
-            left: 50%;
-            bottom: calc(100% + 10px); /* Position above the button */
-            transform: translateX(-50%); /* Center horizontally */
-            background-color: #000;
-            color: #fff;
-            padding: 0.5rem 0.9rem; /* Adjusted padding */
-            border-radius: 8px;
-            font-size: 0.85rem; /* Smaller font */
-            white-space: nowrap;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
-            pointer-events: none;
-            z-index: 100;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-        }
-
-        .icon-button:hover .tooltip {
-            opacity: 1;
-            visibility: visible;
-            transform: translateX(-50%) translateY(-5px); /* Animate upwards on hover */
-        }
 
         /* --- Game Wrapper --- */
         #game-wrapper {
@@ -173,6 +115,10 @@
             box-shadow: 0 15px 45px var(--shadow-color);
             animation: popIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
         }
 
         #game-wrapper::before {
@@ -199,6 +145,18 @@
             display: block;
         }
         
+        .iframe-error-message {
+            display: none;
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-color-muted);
+        }
+
+        .iframe-error-message h3 {
+            color: var(--text-color);
+            margin-top: 0;
+        }
+
         /* --- Modal Styles --- */
         .modal {
             position: fixed;
@@ -224,7 +182,7 @@
         .modal-content {
             background: var(--surface-color);
             border: 1px solid var(--border-color);
-            padding: 3rem;
+            padding: 2.5rem;
             border-radius: 20px;
             width: 90%;
             max-width: 550px;
@@ -232,153 +190,151 @@
             position: relative;
             transform: scale(0.9);
             transition: transform var(--transition-speed) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
         }
 
         .modal.active .modal-content {
             transform: scale(1);
         }
 
-        .modal-header {
-            text-align: center;
-            margin-bottom: 2.5rem;
-        }
-
-        .modal-header h2 {
-            font-size: 2rem;
-            margin: 0;
-            font-weight: 500;
-            color: var(--text-color);
-        }
+        .modal-header { text-align: center; margin-bottom: 2rem; }
+        .modal-body { flex-grow: 1; }
+        .modal-header h2 { font-size: 1.8rem; margin: 0; font-weight: 500; color: var(--text-color); }
 
         .close-button {
             position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0.6rem;
-            border-radius: 50%;
+            top: 1.5rem; right: 1.5rem;
+            background: none; border: none; cursor: pointer;
+            padding: 0.6rem; border-radius: 50%;
             transition: background-color var(--transition-speed) ease;
         }
-
         .close-button svg {
-            width: 26px;
-            height: 26px;
-            stroke: var(--text-color-muted);
+            width: 26px; height: 26px; stroke: var(--text-color-muted);
             transition: stroke var(--transition-speed) ease, transform var(--transition-speed) ease;
         }
+        .close-button:hover { background-color: rgba(255, 255, 255, 0.1); }
+        .close-button:hover svg { stroke: var(--text-color); transform: rotate(90deg); }
 
-        .close-button:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-        .close-button:hover svg {
-            stroke: var(--text-color);
-            transform: rotate(90deg);
-        }
-
-        .settings-group {
-            margin-bottom: 2rem;
-        }
-
+        .settings-group { margin-bottom: 2rem; }
+        .settings-group:last-child { margin-bottom: 0; }
         .settings-group label {
-            display: block;
-            margin-bottom: 0.85rem;
-            font-weight: 400;
-            color: var(--text-color-muted);
-            font-size: 0.95rem;
-            text-align: center; /* Center the label for the color swatches */
+            display: block; margin-bottom: 0.85rem; font-weight: 400;
+            color: var(--text-color-muted); font-size: 0.95rem; text-align: center;
         }
 
         /* Color Palette Picker */
-        .color-palette {
-            display: flex;
-            gap: 1.2rem;
-            justify-content: center;
-        }
-        
+        .color-palette { display: flex; gap: 1.2rem; justify-content: center; }
         .color-swatch {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            cursor: pointer;
+            width: 35px; height: 35px; border-radius: 50%; cursor: pointer;
             border: 3px solid transparent;
             transition: transform var(--transition-speed) ease, border-color var(--transition-speed) ease;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
+        .color-swatch.active { border-color: #ffffff; transform: scale(1.15); }
 
-        .color-swatch.active {
-            border-color: #ffffff;
-            transform: scale(1.15);
+        /* New Info Modal Styles */
+        .controls-showcase {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
         }
-
-        /* Info Modal Specifics */
-        .controls-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            background-color: rgba(0, 0, 0, 0.2);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .controls-list li {
+        .control-row {
             display: flex;
             justify-content: space-between;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.95rem;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 0.8rem 1.2rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
         }
-        .controls-list li:last-child {
-            border-bottom: none;
+        .control-label {
+            font-size: 1rem;
+            color: var(--text-color);
         }
-        .controls-list .key {
-            font-weight: 500;
+        .key-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .key {
             background-color: #374151;
-            padding: 0.3rem 0.8rem;
-            border-radius: 6px;
             color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 500;
+            border-bottom: 3px solid #1f2937;
+            transition: transform 0.1s ease, border-bottom 0.1s ease;
+            min-width: 40px; /* For single letters */
+            text-align: center;
+            font-family: var(--font-main);
         }
-
-        /* --- Loader --- */
-        #loader {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: var(--background-end);
+        .key:hover {
+            transform: translateY(-2px);
+            border-bottom-width: 5px;
+        }
+        .wasd-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 40px);
+            grid-template-rows: repeat(2, 40px);
+            gap: 0.5rem;
+            justify-items: center;
+            align-items: center;
+        }
+        .wasd-grid .key {
+            width: 100%;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
-            z-index: 9999;
-            transition: opacity 0.5s ease;
+            padding: 0;
         }
+        .wasd-w { grid-column: 2 / 3; }
+        .wasd-a { grid-column: 1 / 2; grid-row: 2 / 3; }
+        .wasd-s { grid-column: 2 / 3; grid-row: 2 / 3; }
+        .wasd-d { grid-column: 3 / 4; grid-row: 2 / 3; }
 
+        .key.large {
+            min-width: 140px;
+        }
+        
+        /* --- Loader --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--background-end); display: flex;
+            align-items: center; justify-content: center; flex-direction: column;
+            z-index: 9999; transition: opacity 0.5s ease;
+        }
         .spinner {
-            width: 60px;
-            height: 60px;
-            border: 5px solid var(--border-color);
-            border-top: 5px solid var(--glow-color);
-            border-radius: 50%;
+            width: 60px; height: 60px; border: 5px solid var(--border-color);
+            border-top: 5px solid var(--glow-color); border-radius: 50%;
             animation: loader-spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
-            margin-bottom: 1.5rem;
+        }
+        #loader p { font-size: 1.1rem; color: var(--text-color-muted); animation: pulse 1.5s infinite alternate; margin-top: 1.5rem; }
+        #loader.hidden { opacity: 0; pointer-events: none; }
+        
+        /* --- Toast Notification --- */
+        #toast-notification {
+            position: fixed;
+            top: 2vh;
+            left: 50%;
+            transform: translate(-50%, -150%);
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 5px 20px var(--shadow-color);
+            z-index: 9999;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #toast-notification.show {
+            transform: translate(-50%, 0);
         }
 
-        #loader p {
-            font-size: 1.1rem;
-            color: var(--text-color-muted);
-            animation: pulse 1.5s infinite alternate;
-        }
-        
-        #loader.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        
         /* --- Keyframe Animations --- */
         @keyframes spin { to { --angle: 360deg; } }
         @keyframes loader-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         @keyframes popIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes pulse { from { transform: scale(0.98); opacity: 0.8; } to { transform: scale(1.02); opacity: 1; } }
 
@@ -391,24 +347,19 @@
         <div class="spinner"></div>
         <p>Loading Minecraft Classic...</p>
     </div>
+    
+    <div id="toast-notification"></div>
 
     <div class="app-container">
-        <header class="header">
-            <img src="minecraft_logo.png" alt="Minecraft Logo" class="minecraft-logo" onerror="this.onerror=null;this.src='https://placehold.co/300x48/000000/FFFFFF?text=Minecraft&font=pixel'">
-        </header>
-
         <nav class="side-panel">
             <button class="icon-button" id="settings-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"><path d="M12 2.69l.346.666L19.5 15.3l-1.414 1.414L12 10.414l-6.086 6.3L4.5 15.3l7.154-11.944L12 2.69zm0 18.62l-7.154-11.944L4.5 8.7l6.086 6.3L12 18.586l1.414-1.586 6.086-6.3.346-.666L12 21.31zM12 2.69L4.5 15.3h15L12 2.69z"/></svg>
-                <span class="tooltip">Color Palette</span>
             </button>
             <button class="icon-button" id="info-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                <span class="tooltip">Info & Controls</span>
             </button>
             <button class="icon-button" id="fullscreen-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke="currentColor"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
-                <span class="tooltip">Toggle Fullscreen</span>
             </button>
         </nav>
 
@@ -419,14 +370,17 @@
                 title="Minecraft Classic Game"
                 allow="fullscreen; clipboard-write; pointer-lock"
             ></iframe>
+            <div id="iframe-error" class="iframe-error-message">
+                <h3>Oops! Could Not Load Game</h3>
+                <p>The Minecraft Classic service may be unavailable or has blocked embedding. Please try again later.</p>
+            </div>
         </div>
     </div>
 
+    <!-- Modals -->
     <div id="settings-modal" class="modal">
         <div class="modal-content">
-            <button class="close-button" data-close-modal="settings-modal">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
+            <button class="close-button" data-close-modal="settings-modal"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             <div class="modal-header"><h2>Color Palette</h2></div>
             <div class="modal-body">
                 <div class="settings-group">
@@ -445,110 +399,155 @@
     
     <div id="info-modal" class="modal">
         <div class="modal-content">
-            <button class="close-button" data-close-modal="info-modal">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-            <div class="modal-header"><h2>Welcome to Minecraft Classic</h2></div>
+            <button class="close-button" data-close-modal="info-modal"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            <div class="modal-header"><h2>Controls</h2></div>
             <div class="modal-body">
-                <p style="text-align: center; color: var(--text-color-muted); margin-top: -1rem; margin-bottom: 2rem;">Click inside the game window to start playing.</p>
-                <ul class="controls-list">
-                    <li><span>Movement</span> <span class="key">W, A, S, D</span></li>
-                    <li><span>Jump</span> <span class="key">Space</span></li>
-                    <li><span>Destroy Block</span> <span class="key">Left Click</span></li>
-                    <li><span>Place Block</span> <span class="key">Right Click</span></li>
-                    <li><span>Toggle Block Type</span> <span class="key">Middle Click</span></li>
-                    <li><span>Select Block</span> <span class="key">Number Keys</span></li>
-                    <li><span>Open Block Menu</span> <span class="key">B</span></li>
-                    <li><span>Toggle Fog</span> <span class="key">F</span></li>
-                </ul>
+                <p style="text-align: center; color: var(--text-color-muted); margin-top: -1.5rem; margin-bottom: 2rem;">Click the game window to begin.</p>
+                <div class="controls-showcase">
+                    <div class="control-row">
+                        <span class="control-label">Movement</span>
+                        <div class="key-group">
+                            <div class="wasd-grid">
+                                <div class="key wasd-w">W</div>
+                                <div class="key wasd-a">A</div>
+                                <div class="key wasd-s">S</div>
+                                <div class="key wasd-d">D</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <span class="control-label">Jump</span>
+                        <div class="key-group">
+                            <div class="key large">Space</div>
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <span class="control-label">Destroy / Place Block</span>
+                        <div class="key-group">
+                            <div class="key">LMB</div>
+                            <div class="key">RMB</div>
+                        </div>
+                    </div>
+                    <div class="control-row">
+                        <span class="control-label">Block Menu / Toggle Fog</span>
+                        <div class="key-group">
+                            <div class="key">B</div>
+                            <div class="key">F</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-
+    
     <script>
-    // --- UI/UX Script ---
-    document.addEventListener('DOMContentLoaded', () => {
-        const root = document.documentElement;
-        
-        // Modal Handling
-        const settingsBtn = document.getElementById('settings-btn');
-        const infoBtn = document.getElementById('info-btn');
-        const settingsModal = document.getElementById('settings-modal');
-        const infoModal = document.getElementById('info-modal');
-        const closeButtons = document.querySelectorAll('.close-button');
+    try {
+        document.addEventListener('DOMContentLoaded', () => {
+            const root = document.documentElement;
 
-        const openModal = (modal) => modal.classList.add('active');
-        const closeModal = (modal) => modal.classList.remove('active');
+            // --- Robust Toast Notification System ---
+            const toast = document.getElementById('toast-notification');
+            const showToast = (message, duration = 3000) => {
+                if (!toast) return;
+                toast.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, duration);
+            };
 
-        settingsBtn.addEventListener('click', () => openModal(settingsModal));
-        infoBtn.addEventListener('click', () => openModal(infoModal));
-
-        closeButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const modalId = button.getAttribute('data-close-modal');
-                if(modalId) closeModal(document.getElementById(modalId));
-            });
-        });
-        
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', (event) => {
-                if (event.target === modal) closeModal(modal);
-            });
-        });
-
-        // Loader
-        const loader = document.getElementById('loader');
-        const gameIframe = document.getElementById('minecraft-container');
-        
-        let isGameLoaded = false;
-        
-        gameIframe.addEventListener('load', () => {
-            isGameLoaded = true;
-            setTimeout(() => {
-                 loader.classList.add('hidden');
-            }, 500);
-        });
-        
-        // Fallback to hide loader
-        setTimeout(() => {
-            if (!isGameLoaded) {
-                 loader.classList.add('hidden');
-            }
-        }, 8000); // Longer fallback for potentially slow game load
-
-
-        // Settings Logic
-        const colorPalette = document.getElementById('color-palette');
-        const minecraftLogo = document.querySelector('.minecraft-logo');
-
-        colorPalette.addEventListener('click', (e) => {
-            if (e.target.classList.contains('color-swatch')) {
-                const color = e.target.dataset.color;
-                root.style.setProperty('--glow-color', color);
+            // --- Robust Modal Handling ---
+            const initModals = () => {
+                const settingsBtn = document.getElementById('settings-btn');
+                if (settingsBtn) settingsBtn.addEventListener('click', () => document.getElementById('settings-modal')?.classList.add('active'));
                 
-                let accentColor = color; // Simple mapping for this case
-                root.style.setProperty('--accent-color', accentColor);
+                const infoBtn = document.getElementById('info-btn');
+                if (infoBtn) infoBtn.addEventListener('click', () => document.getElementById('info-modal')?.classList.add('active'));
                 
-                minecraftLogo.style.filter = `drop-shadow(0 0 15px ${color})`;
+                 document.querySelectorAll('.modal .close-button').forEach(button => {
+                    const modalId = button.dataset.closeModal;
+                    const modal = document.getElementById(modalId);
+                    if(modal) button.addEventListener('click', () => modal.classList.remove('active'));
+                });
                 
-                colorPalette.querySelector('.active').classList.remove('active');
-                e.target.classList.add('active');
-            }
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.addEventListener('click', e => {
+                        if (e.target === modal) modal.classList.remove('active');
+                    });
+                });
+            };
+
+            // --- Robust Game Loader ---
+            const initLoader = () => {
+                const loader = document.getElementById('loader');
+                const gameIframe = document.getElementById('minecraft-container');
+                const iframeError = document.getElementById('iframe-error');
+                if (!loader || !gameIframe || !iframeError) return;
+
+                let isGameLoaded = false;
+                
+                const hideLoader = () => {
+                    if (isGameLoaded) return;
+                    loader.classList.add('hidden');
+                    isGameLoaded = true;
+                };
+
+                gameIframe.addEventListener('load', hideLoader);
+
+                // Fallback timeout in case 'load' event fails to fire
+                setTimeout(() => {
+                    if (!isGameLoaded) {
+                        hideLoader();
+                        gameIframe.style.display = 'none';
+                        iframeError.style.display = 'block';
+                    }
+                }, 15000); // 15 second timeout
+            };
+
+            // --- Settings & Color Palette ---
+            const initSettings = () => {
+                const colorPalette = document.getElementById('color-palette');
+                if (!colorPalette) return;
+
+                colorPalette.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('color-swatch')) {
+                        const color = e.target.dataset.color;
+                        root.style.setProperty('--glow-color', color);
+                        root.style.setProperty('--accent-color', color);
+                        const currentActive = colorPalette.querySelector('.active');
+                        if (currentActive) currentActive.classList.remove('active');
+                        e.target.classList.add('active');
+                    }
+                });
+            };
+
+            // --- Robust Fullscreen API ---
+            const initFullscreen = () => {
+                const fullscreenBtn = document.getElementById('fullscreen-btn');
+                const gameWrapper = document.getElementById('game-wrapper');
+                if (!fullscreenBtn || !gameWrapper) return;
+                
+                fullscreenBtn.addEventListener('click', () => {
+                    if (!document.fullscreenElement) {
+                        gameWrapper.requestFullscreen().catch(() => {
+                           showToast('Could not enter fullscreen mode.');
+                        });
+                    } else {
+                        document.exitFullscreen();
+                    }
+                });
+            };
+            
+            // --- Initialize all features ---
+            initModals();
+            initLoader();
+            initSettings();
+            initFullscreen();
         });
-
-        // Fullscreen API
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
-        const gameWrapper = document.getElementById('game-wrapper');
-
-        fullscreenBtn.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                gameWrapper.requestFullscreen().catch(err => alert(`Fullscreen error: ${err.message}`));
-            } else {
-                document.exitFullscreen();
-            }
-        });
-    });
-
+    } catch (e) {
+        console.error("A critical error occurred during initialization:", e);
+        document.body.innerHTML = '<div style="color: white; text-align: center; padding-top: 20vh;"><h1>An unexpected error occurred</h1><p>Please try refreshing the page.</p></div>';
+    }
     </script>
 </body>
 </html>
